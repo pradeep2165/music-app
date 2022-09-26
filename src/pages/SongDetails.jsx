@@ -3,13 +3,27 @@ import { useParams } from "react-router-dom";
 import { DetailsHeader, Error, Loader, RelatedSongs } from "../components";
 import { playPause, setActiveSong } from "../redux/features/playerSlice";
 import { useGetSongDetailsQuery } from "../redux/services/shazamCore";
+import { useGetSongRelatedQuery } from "../redux/services/shazamCore";
 
 const SongDetails = () => {
   const { songid } = useParams();
   const dispatch = useDispatch();
   const { activeSong, isPlaying } = useSelector((state) => state.player);
   const { data: songData, ifFetching: isFetchingSongDetails } = useGetSongDetailsQuery({ songid });
-  console.log(songid);
+  const { data, ifFetching: isFetchingRelatedSongs, error } = useGetSongRelatedQuery({ songid });
+
+  if (isFetchingSongDetails || isFetchingRelatedSongs) return <Loader title="Searching song details" />;
+
+  if (error) return <Error />;
+
+  const handlePauseClick = () => {
+    dispatch(playPause(false));
+  };
+  const handlePlayClick = (song, i) => {
+    dispatch(setActiveSong({ song, data, i }));
+    dispatch(playPause(true));
+  };
+
   return (
     <div className="flex flex-col">
       <DetailsHeader artistId="" songData={songData} />
@@ -29,6 +43,7 @@ const SongDetails = () => {
           <p>Sorry, no lyrics found</p>
         )}
       </div>
+      <RelatedSongs data={data} isPlaying={isPlaying} activeSong={activeSong} handlePauseClick={handlePauseClick} handlePlayClick={handlePlayClick} />
     </div>
   );
 };
